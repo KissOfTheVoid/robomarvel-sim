@@ -1,0 +1,18 @@
+launch:
+- executable:
+    name: mediamtx
+    cmd: "mediamtx $(find-pkg-share webcam)/config/mediamtx.yaml"
+    output: screen
+    shell: True
+
+- node:
+    pkg: webcam
+    exec: rtsp2ros
+
+    param:
+    - { name: rtsp_url, value: "rtsp://localhost:8554/cam" }
+    - { name: topic, value: "/camera/image_raw" }
+    - { name: frame_id, value: "camera_link" }
+    - { name: resolution, value: "640x480" }
+    - { name: fps, value: 10.0 }
+    - { name: use_compression, value: True }

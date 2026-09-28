@@ -1,0 +1,19 @@
+# Умолчания colcon для этого рабочего пространства.
+# Подхватывается через переменную COLCON_DEFAULTS_FILE, заданную в Dockerfile.
+#
+# Зачем: пакеты лежат в packages/ (как на роботе), а colcon по умолчанию ищет их в src/.
+# Без этого файла пришлось бы каждый раз писать
+#   colcon build --symlink-install --base-paths packages
+# а в материалах курса ученик должен набирать просто `colcon build`.
+#
+# symlink-install: правки launch-файлов, конфигов и миров подхватываются без пересборки
+# (они кладутся симлинками, а не копиями).
+
+build:
+  symlink-install: true
+  base-paths:
+    - packages
+
+test:
+  base-paths:
+    - packages

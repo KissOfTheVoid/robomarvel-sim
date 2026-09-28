@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<!--
+  Описание робота Robomarvel.
+
+  Блоки visual задают только внешний вид робота на экране и на дерево
+  систем координат не влияют.
+-->
+<robot name="my_robot">
+
+  <material name="body"><color rgba="0.25 0.28 0.32 1.0"/></material>
+  <material name="accent"><color rgba="0.90 0.35 0.10 1.0"/></material>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.18 0.15 0.06"/></geometry>
+      <material name="body"/>
+    </visual>
+  </link>
+
+  <link name="lidar">
+    <visual>
+      <origin xyz="0 0 0.02" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.035" length="0.04"/></geometry>
+      <material name="accent"/>
+    </visual>
+  </link>
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar"/>
+    <origin xyz="0.06 0 0" rpy="0 0 1.57"/>
+  </joint>
+
+  <link name="camera_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.02 0.05 0.02"/></geometry>
+      <material name="accent"/>
+    </visual>
+  </link>
+  <joint name="camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="camera_link"/>
+    <origin xyz="0.08 0 0.06" rpy="0 0 0"/>
+  </joint>
+
+  <link name="camera_optical_frame"></link>
+  <joint name="camera_optical_joint" type="fixed">
+    <parent link="camera_link"/>
+    <child link="camera_optical_frame"/>
+    <origin xyz="0 0 0" rpy="-1.5707963 0 -1.5707963"/>
+  </joint>
+
+</robot>

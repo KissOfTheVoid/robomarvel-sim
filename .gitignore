@@ -1,0 +1,21 @@
+# colcon
+build/
+install/
+log/
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# карты rtabmap - генерируются, весят десятки мегабайт.
+# Паттерн maps/* , а не maps/ : иначе git не заходит в папку и не видит .gitkeep
+maps/*
+!maps/.gitkeep
+
+# дампы TF от ros2 run tf2_tools view_frames
+frames_*.gv
+frames_*.pdf
+
+# macOS
+.DS_Store
