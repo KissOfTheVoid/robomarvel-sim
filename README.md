@@ -3,7 +3,7 @@
 Учебный симулятор к курсу «Интеллектуальная робототехника с ROS 2».
 
 Симулируются три части робота: плата управления, лидар и источник видео. Одометрия,
-построение карты, локализация и навигация работают штатными пакетами ROS 2 с теми же
+построение карты, локализация и навигация работают готовыми пакетами ROS 2 с теми же
 настройками, что заданы на роботе, поэтому имена топиков, типы сообщений и структура систем
 координат в симуляции и на роботе совпадают.
 
@@ -15,13 +15,19 @@
 ```bash
 docker build -t robomarvel-sim .
 docker run -it --name robomarvel-sim \
-  -v "$(pwd)":/src \
+  -v "$(pwd):/src" \
   -p 127.0.0.1:8765:8765 \
   -p 127.0.0.1:8000:8000 \
   -p 127.0.0.1:8554:8554 \
   -p 127.0.0.1:8889:8889 \
   -p 127.0.0.1:8189:8189/udp \
   robomarvel-sim
+```
+
+На Windows PowerShell перенос строки через `\` не работает — там та же команда в одну строку:
+
+```powershell
+docker run -it --name robomarvel-sim -v "$(pwd):/src" -p 127.0.0.1:8765:8765 -p 127.0.0.1:8000:8000 -p 127.0.0.1:8554:8554 -p 127.0.0.1:8889:8889 -p 127.0.0.1:8189:8189/udp robomarvel-sim
 ```
 
 Порты: `8765` — мост для средства визуализации, `8000` — VS Code в браузере,
@@ -57,8 +63,8 @@ ros2 launch robomarvel_sim sim.launch.py slam:=localization db:=/src/maps/classr
 
 | Аргумент | По умолчанию | Значения |
 |---|---|---|
-| `world` | `config/worlds/classroom.yaml` | путь к файлу планировки |
-| `odom` | `icp` | `icp` — ICP-одометрия по сканам, `perfect` — истинная поза, для отладки |
+| `world` | `classroom.yaml` из пакета | путь к файлу планировки |
+| `odom` | `icp` | `icp` — ICP-одометрия по сканам, `perfect` — истинная поза, для отладки; `perfect` работает только вместе с `slam:=off` |
 | `slam` | `mapping` | `mapping` — строить карту, `localization` — работать по готовой, `off` — без карты |
 | `db` | `/src/maps/rtabmap.db` | путь к базе rtabmap |
 | `nav` | `true` | серверы Nav2 и `goal_proxy` |
@@ -84,7 +90,7 @@ ros2 run nav2_map_server map_saver_cli -f /src/maps/classroom
 | `sim_detection` | детектор объектов | `/detections`, `/camera/camera_info`, `/camera/image_annotated_compressed` |
 | `goal_proxy` | та же нода работает на роботе | `/goal/status`, `/goal/feedback`, сервис `/goal/cancel` |
 
-Остальное запускается штатными пакетами: `robot_state_publisher`, `icp_odometry`
+Остальное запускается готовыми пакетами ROS 2: `robot_state_publisher`, `icp_odometry`
 из `rtabmap_odom`, `rtabmap` из `rtabmap_slam`, серверы Nav2 с менеджером жизненного цикла
 и `foxglove_bridge`.
 
@@ -124,6 +130,13 @@ ros2 topic echo /goal/status
 
 Откройте [Lichtblick](https://viz.robomarvel.ru) и подключитесь по адресу `ws://localhost:8765`.
 
+Мост `foxglove_bridge` поднимается внутри `sim.launch.py`. Если визуализация нужна без
+симулятора, например при работе с вебкамерой, мост запускают отдельной командой:
+
+```bash
+ros2 run foxglove_bridge foxglove_bridge --ros-args -p port:=8765 -p address:=0.0.0.0
+```
+
 Настройка панелей:
 
 - 3D: системой координат сцены выберите `map`, включите топики `/scan`,
@@ -132,8 +145,10 @@ ros2 topic echo /goal/status
 - Transforms: выключите `sim_world` и `sim_base`, они намеренно лежат в отдельном дереве
   и не связаны с `map`.
 - Image: топик `/camera/image_annotated_compressed`.
-- Отправка цели мышью: в настройках панели 3D в поле топика для публикации позы укажите
-  `/goal`, штатное значение этого поля — `/move_base_simple/goal`.
+- Отправка цели мышью: у инструмента публикации в панели 3D три режима — Point, Pose
+  и Pose estimate, и у каждого своё поле топика. Выберите режим Pose и укажите `/goal`
+  в поле топика именно этого режима; значение поля по умолчанию —
+  `/move_base_simple/goal`, и пока оно не изменено, нажатие в сцене цель не отправляет.
 
 ## VS Code в браузере
 
@@ -152,14 +167,17 @@ ros2 launch webcam webcam.yaml
 
 [http://localhost:8889/cam/publish?video-codec=h264%2F90000&video-bitrate=1000&audio-device=none&audio-voice=false&video-width=1280&video-height=720&video-framerate=10](http://localhost:8889/cam/publish?video-codec=h264%2F90000&video-bitrate=1000&audio-device=none&audio-voice=false&video-width=1280&video-height=720&video-framerate=10)
 
-Картинка появится в панели Image по топику `/camera/image_raw`. Разрешение, частота кадров
-и сжатие задаются в `packages/webcam/launch/webcam.yaml`.
+Картинка появится в панели Image по топику `/camera/image_raw`. Сообщения этого топика имеют
+тип `sensor_msgs/CompressedImage`, кадры внутри сжаты в JPEG, поэтому своя нода-подписчик
+должна их декодировать. Разрешение, частота кадров и сжатие задаются в
+`packages/webcam/launch/webcam.yaml`.
 
 ## Планировка помещения
 
-Файл `config/worlds/classroom.yaml` описывает класс размером 8 × 6 метров: `walls` — отрезки
-стен и перегородок, `boxes` — прямоугольная мебель, `circles` и `objects` — круглые
-препятствия, `start` — точка старта робота. Свои помещения задаются такими же файлами.
+Файл `packages/robomarvel_sim/config/worlds/classroom.yaml` описывает класс размером
+8 × 6 метров: `walls` — отрезки стен и перегородок, `boxes` — прямоугольная мебель,
+`circles` и `objects` — круглые препятствия, `start` — точка старта робота. Свои помещения
+задаются такими же файлами.
 
 ## Ограничения
 
